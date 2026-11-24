@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; font-src 'self'; form-action 'self'">
+  <title>Yarn stock tracker by count, dye-lot and shade · Open MSME</title>
+  <meta name="description" content="Free single-binary yarn store ledger for weaving and knitting units: stock per count, shade and dye-lot, FIFO lot allocation on issue, Ne/Nm/tex/denier and ply count conversions, consumption variance, reorder and aged-lot alerts.">
+  <meta name="color-scheme" content="light dark">
+  <meta property="og:title" content="Yarn stock tracker by count, dye-lot and shade">
+  <meta property="og:description" content="Track yarn the way a mill floor actually holds it: per dye-lot, because the same shade from a different lot bands in the cloth. Runs on your own machine, stores nothing online.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="assets/accent.css">
+  <script src="assets/theme-init.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap">
+      <a class="brand" href="https://sreenivas-sadhu-prabhakara.github.io/openmsme/">
+        <span class="dot"></span><b>Open MSME</b><span class="tag">yarn store</span>
+      </a>
+      <span class="sp"></span>
+      <a class="home" href="https://sreenivas-sadhu-prabhakara.github.io/openmsme/">All tools</a>
+      <button class="themer" data-themer type="button">Theme</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap">
+        <div class="eyebrow">Textiles &amp; apparel · India + Philippines</div>
+        <h1>Yarn stock tracker by count, dye-lot and shade for weaving units</h1>
+        <p class="lede">A free, single-file tool that holds every yarn balance per dye-lot, allocates issues oldest lot first, and converts between Ne, Nm, tex, denier and folded counts without getting the reciprocal backwards. It runs on your own machine and sends nothing anywhere.</p>
+        <div class="who">
+          <span class="pill">Weaving and knitting units, dyers and yarn traders</span>
+          <span class="pill">Single binary, no database</span>
+          <span class="pill reg">Mill-floor stock control</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap">
+      <div class="prose">
+
+        <h2>What it does</h2>
+        <p>Yarn is not a fungible commodity, and most stock software treats it as though it were. Two lots of one nominal shade come out of separate dye baths, and the difference between them shows up as a visible colour band across the finished fabric at the point the warp or the feed changes over. A single pooled &ldquo;30s Navy: 225 kg&rdquo; balance hides exactly the information a weaver needs before cutting a warp.</p>
+        <p>This tool holds the balance per lot instead. The stock key is <b>count, shade, dye-lot and supplier</b> together &mdash; the supplier included because two spinners happily reuse the same lot numbers. On top of that it does the arithmetic a yarn store actually needs:</p>
+        <ul>
+          <li><b>Balance per lot</b> &mdash; receipts, less issues, plus or minus adjustments. An issue that would drive a lot negative is refused outright, naming the shortfall, because a negative balance means a slip or a receipt is wrong and both need a person.</li>
+          <li><b>FIFO allocation on issue</b> &mdash; ask for 120 kg of 30s Navy and the tool spreads it across dye-lots oldest receipt first, shows you the per-lot allocation and how many shade joins it implies, and writes nothing until you confirm.</li>
+          <li><b>Count conversion</b> &mdash; Ne, Nm, tex and denier in both directions, plus folded counts: <code>2/60s</code> is read as a two-fold of 60s singles and resolves to a resultant Ne 30.</li>
+          <li><b>Consumption against standard</b> &mdash; what a production run should have drawn against what was actually issued, as a variance and as a wastage percentage.</li>
+          <li><b>Reorder and aged-lot alerts</b> &mdash; what has fallen below its reorder level with a suggested order quantity, and which lots have sat long enough to be a shade-drift risk.</li>
+        </ul>
+
+        <h2>Who it's for</h2>
+        <p>Small and medium weaving and knitting units, commission dyers, and yarn traders in India and the Philippines &mdash; the shed with four to forty looms, or a circular knitting floor, where the yarn store is run from a notebook or a spreadsheet and the count conversions are done on a phone calculator. If a buyer has ever rejected a piece for a shade band, this tool is built for that problem.</p>
+        <p>It assumes someone on the floor can type a dye-lot number off a cone label. It does not assume an accountant, a server, or an internet connection.</p>
+
+        <h2>The rule it implements</h2>
+        <p><b>No statute applies to this tool, and it does not pretend one does.</b> Yarn stock control is not a regulated return; it is a physical and arithmetic discipline. Rather than invent a compliance hook, here is precisely what the tool implements and the exact figures it uses.</p>
+        <p><b>The physical rule: dye-lot integrity.</b> Stock is never pooled above the dye-lot. Issues consume one lot to exhaustion before opening the next, both because the oldest lot has had the longest to drift in storage and because it keeps the number of shade joins in a run to a minimum.</p>
+        <p><b>The conversion rules.</b> Ne and Nm are indirect counts (length per unit mass: a bigger number is a finer yarn). Tex and denier are direct (mass per unit length: a bigger number is coarser). Converting between the two families is a reciprocal, not a multiplication. Tex is the hub, so there is exactly one path between any two systems:</p>
+        <pre><code>tex    = 1000 / Nm         Nm     = 1000 / tex
+Ne     = 590.5 / tex       tex    = 590.5 / Ne
+denier = 9 x tex           tex    = denier / 9</code></pre>
+        <p>A folded count divides in Ne and multiplies in tex, which is the same statement twice: a two-fold of 60s singles is a resultant <b>Ne 30</b> and a resultant <b>19.683 tex</b>, and <code>2/60s</code>, <code>3/90s</code> and <code>30s</code> all resolve to the same resultant count.</p>
+
+        <details class="assumptions" open>
+          <summary>The exact constants used, and where they come from</summary>
+          <p><b>1000</b> (Nm &harr; tex) is exact by definition: Nm is metres per gram and tex is grams per 1000 metres.</p>
+          <p><b>9</b> (denier &harr; tex) is exact by definition: denier is grams per 9000 metres.</p>
+          <p><b>590.5</b> (Ne &harr; tex) is a rounding. Ne is the number of 840-yard hanks per pound, so the factor is 453.59237 g &divide; (840 &times; 0.9144 m) &times; 1000 = <b>590.5412474&hellip;</b>. Mill practice everywhere rounds this to 590.5, and that is what this tool uses: every conversion is therefore within <b>0.007%</b> of exact. That is far inside any commercial tolerance, but if your buyer's contract specifies a different factor, convert with theirs before quoting.</p>
+          <p><b>90 days</b> is the default age past which a lot still holding stock is flagged for shade-drift risk. This is a common working figure, <i>not</i> a standard &mdash; drift depends on your fibre, dye class and godown conditions. Change it in the Alerts tab to whatever your own re-sampling experience says.</p>
+          <p><b>Twice the reorder level</b> is the default order-up-to target when you have not set one. A reorder level is only a trigger, so ordering exactly the shortfall would put the item straight back on the alert list. Set an explicit order-up-to figure to match your supplier's lead time and minimum dye-lot size.</p>
+          <p><b>24 plies</b> is the largest ply count accepted. Its real job is to catch the reversed notation: <code>60/2</code> means the same yarn as <code>2/60s</code> in some trades, and reading it plies-first would silently take a count from 30 to 0.033, so it is refused with an explanation instead of guessed at.</p>
+          <p>All quantities are held internally as whole grams rather than as fractional kilograms. That is what lets an exact-fit issue empty a lot to precisely zero, and stops a long run of receipts and issues drifting by a fraction of a gram into a false negative balance.</p>
+        </details>
+
+        <h2>Install &amp; run</h2>
+        <p>You need <b>Go 1.25 or later</b> once, to build it (from <code>go.dev/dl</code>). After that it is a single executable you can copy to any machine of the same kind &mdash; no runtime, no database, no installer.</p>
+        <pre><code>git clone https://github.com/sreenivas-sadhu-prabhakara/yarn-inventory-count-lot
+cd yarn-inventory-count-lot
+
+# build the binary
+go build -o yarn-inventory-count-lot .
+./yarn-inventory-count-lot
+
+# or just run it from source
+go run .</code></pre>
+        <p>Then open <code>http://127.0.0.1:8080</code> in a browser on the same machine. Two flags change the defaults:</p>
+        <pre><code>./yarn-inventory-count-lot -addr 127.0.0.1:9000 -data /path/to/yarn-book.json</code></pre>
+        <ol class="steps">
+          <li>Book your opening stock in on the <b>Receive</b> tab, one dye-lot at a time, or import it all at once from a CSV on the <b>Data</b> tab.</li>
+          <li>Set a reorder level for the counts and shades you keep in stock, on the <b>Alerts</b> tab.</li>
+          <li>From then on, raise every production issue on the <b>Issue</b> tab by count and shade. Check the lot allocation it proposes, then confirm it.</li>
+          <li>Export the balance sheet and the issue register to CSV whenever your accountant or your buyer asks.</li>
+        </ol>
+
+        <h2>What it stores</h2>
+        <p>One JSON file on your own machine &mdash; <code>./yarn-inventory-count-lot-data.json</code> by default, or wherever <code>-data</code> points. It holds your movements, your reorder levels and your aged-lot threshold, and nothing else.</p>
+        <p>The file is written atomically: the tool writes a temporary file alongside it, flushes it, and renames it over the target, so a power cut during a save leaves your previous file intact rather than a truncated one. It is written with owner-only permissions. Because it is plain JSON, you can read it, diff it, put it in version control, or back it up by copying it.</p>
+        <p>The tool binds to <b>127.0.0.1</b>, the loopback interface, so nothing outside your machine can reach it unless you deliberately change <code>-addr</code>. It makes <b>no outbound network calls of any kind</b>: no telemetry, no analytics, no update check, no fonts or scripts from a CDN. The web interface is compiled into the executable. You can run the whole thing on an air-gapped machine and nothing will be missing.</p>
+
+        <h2>Features</h2>
+        <div class="featgrid">
+          <div class="feat">
+            <h3>Balance per dye-lot</h3>
+            <p>Receipts less issues, plus or minus adjustments, held against count, shade, dye-lot and supplier together. Capitalisation and stray spacing are ignored, so one physical lot never splits into two balances.</p>
+          </div>
+          <div class="feat">
+            <h3>FIFO lot allocation</h3>
+            <p>Issue by count and shade; the tool spreads it across lots oldest receipt first and shows you each line, what is left after, and how many shade joins the run will carry, before anything is written.</p>
+          </div>
+          <div class="feat">
+            <h3>Never goes negative</h3>
+            <p>An issue or a write-off bigger than the stock is refused, with the shortfall named in kilograms. Partly-filled allocations are never written: either the whole issue posts or none of it does.</p>
+          </div>
+          <div class="feat">
+            <h3>Count conversion panel</h3>
+            <p>Ne, Nm, tex and denier in every direction, plus folded counts like <code>2/60s</code> with the singles tex alongside the resultant. Malformed and reversed count strings are rejected rather than guessed.</p>
+          </div>
+          <div class="feat">
+            <h3>Consumption variance</h3>
+            <p>Standard requirement against yarn actually issued over a date range, reported both as a percentage of standard and as the conventional mill wastage percentage on issue.</p>
+          </div>
+          <div class="feat">
+            <h3>Reorder alerts</h3>
+            <p>What has fallen to or below its reorder level, with a suggested order quantity. Items that have run out completely still appear, instead of silently vanishing from the list.</p>
+          </div>
+          <div class="feat">
+            <h3>Aged-lot warnings</h3>
+            <p>Lots still holding stock past a threshold you set, oldest first, so an old part-lot gets cleared or re-sampled before it goes into a long run next to a fresh lot.</p>
+          </div>
+          <div class="feat">
+            <h3>CSV in and out</h3>
+            <p>Import receipts from your existing sheet &mdash; columns matched by name, in any order, with common alternatives understood. Export balances by lot and the full issue register.</p>
+          </div>
+          <div class="feat">
+            <h3>Traceable issue register</h3>
+            <p>Every issue records which dye-lot each kilogram came off, against its work order. That is the record a shade complaint from a buyer gets answered with.</p>
+          </div>
+        </div>
+
+        <div class="note">
+          <p><b>Scope and honesty.</b> This is a stock and conversion tool, not an accounting package, an ERP, or a costing system. It does not value your stock, post to a general ledger, handle GST or VAT, manage purchase orders, or track work in progress. It has no multi-user support and no access control: anyone who can use your machine can use it.</p>
+          <p>The conversion constants are definitional and are stated exactly above. The 90-day aged-lot default and the order-up-to multiple are working judgements, not standards, and you should set both from your own fibre, storage and lead-time experience. The variance figures are only as good as the grams-per-unit standard you type in. Nothing here is a substitute for sampling a shade against the lot you are about to run.</p>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap">
+      <span>Open MSME &middot; free, offline tools for small businesses in India and the Philippines &middot; MIT licensed</span>
+      <a href="https://sreenivas-sadhu-prabhakara.github.io/openmsme/">All tools</a>
+    </div>
+  </footer>
+
+  <script src="assets/ui.js"></script>
+</body>
+</html>

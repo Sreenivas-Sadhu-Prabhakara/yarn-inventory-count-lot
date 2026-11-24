@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; font-src 'self'; form-action 'self'">
+  <title>Yarn stock by count, dye-lot and shade · Open MSME</title>
+  <meta name="description" content="Local yarn store ledger: stock per count, shade and dye-lot, FIFO lot allocation on issue, count conversions, consumption variance and reorder alerts.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="assets/accent.css">
+  <script src="assets/theme-init.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap">
+      <span class="brand"><span class="dot"></span><b>Open MSME</b><span class="tag">yarn store</span></span>
+      <span class="sp"></span>
+      <a class="home" href="https://sreenivas-sadhu-prabhakara.github.io/openmsme/">All tools</a>
+      <button class="themer" data-themer type="button">Theme</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap">
+        <div class="eyebrow">Textiles &amp; apparel · India + Philippines</div>
+        <h1>Yarn stock by count, dye-lot and shade</h1>
+        <p class="lede">Every balance is held per dye-lot, because the same shade from a different lot bands in the cloth. Issues are allocated oldest lot first and the allocation is shown to you before anything is written.</p>
+        <div class="who">
+          <span class="pill">Weaving and knitting units, dyers and yarn traders</span>
+          <span class="pill reg">Mill-floor stock control</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap">
+      <nav class="seg" data-tabs role="group" aria-label="Sections">
+        <button type="button" data-tab="stock" aria-pressed="true">Stock</button>
+        <button type="button" data-tab="receive" aria-pressed="false">Receive</button>
+        <button type="button" data-tab="issue" aria-pressed="false">Issue</button>
+        <button type="button" data-tab="counts" aria-pressed="false">Counts</button>
+        <button type="button" data-tab="alerts" aria-pressed="false">Alerts</button>
+        <button type="button" data-tab="data" aria-pressed="false">Data</button>
+      </nav>
+
+      <p class="note" data-global-status role="status" hidden></p>
+
+      <!-- ---------------------------------------------------------------- -->
+      <div class="panel" data-panel="stock">
+        <div class="cols">
+          <section class="card">
+            <h2>On hand</h2>
+            <div class="result-primary">
+              <div class="k">Total yarn in the store</div>
+              <div class="v" data-total>0.000 kg</div>
+              <div class="sub" data-total-sub>No stock recorded yet.</div>
+            </div>
+
+            <h2>By count and shade</h2>
+            <table class="breakdown">
+              <thead>
+                <tr><th>Count</th><th>Shade</th><th class="num">Open lots</th><th class="num">Balance</th></tr>
+              </thead>
+              <tbody data-groups></tbody>
+            </table>
+            <p class="note" data-groups-empty hidden>Nothing in the store yet. Use <b>Receive</b> to book yarn in, or import a receipts CSV from the <b>Data</b> tab.</p>
+            <p class="assumptions">More than one open lot in a row means a run of that shade may cross a dye-lot join. Check the <b>Issue</b> tab before cutting the warp.</p>
+          </section>
+
+          <section class="card">
+            <h2>By dye-lot</h2>
+            <table class="breakdown">
+              <thead>
+                <tr><th>Count / shade</th><th>Dye-lot</th><th>Received</th><th class="num">Age</th><th class="num">Balance</th></tr>
+              </thead>
+              <tbody data-lots></tbody>
+            </table>
+            <p class="note" data-lots-empty hidden>No dye-lots recorded yet.</p>
+          </section>
+
+          <section class="card">
+            <h2>Issue register</h2>
+            <p class="assumptions">Which dye-lot each kilogram actually came off. This is the record a shade complaint is traced back through, so it is kept for every issue and never overwritten.</p>
+            <table class="breakdown">
+              <thead>
+                <tr><th>Date</th><th>Reference</th><th>Count / shade</th><th>Dye-lot</th><th class="num">Issued</th></tr>
+              </thead>
+              <tbody data-register></tbody>
+            </table>
+            <p class="note" data-register-empty hidden>Nothing issued yet.</p>
+          </section>
+        </div>
+      </div>
+
+      <!-- ---------------------------------------------------------------- -->
+      <div class="panel" data-panel="receive" hidden>
+        <div class="cols">
+          <section class="card">
+            <h2>Receive yarn into the store</h2>
+            <form data-form="receive">
+              <div class="row2">
+                <div class="field">
+                  <label for="r-count">Count <span class="hint">e.g. 30s or 2/60s</span></label>
+                  <div class="inp"><input type="text" id="r-count" name="count" list="counts" required autocomplete="off" placeholder="2/60s"></div>
+                </div>
+                <div class="field">
+                  <label for="r-shade">Shade</label>
+                  <div class="inp"><input type="text" id="r-shade" name="shade" list="shades" required autocomplete="off" placeholder="Navy"></div>
+                </div>
+              </div>
+              <div class="row2">
+                <div class="field">
+                  <label for="r-lot">Dye-lot <span class="hint">as printed on the cone label</span></label>
+                  <div class="inp"><input type="text" id="r-lot" name="dyeLot" required autocomplete="off" placeholder="DL-1142"></div>
+                </div>
+                <div class="field">
+                  <label for="r-supplier">Supplier <span class="hint">optional</span></label>
+                  <div class="inp"><input type="text" id="r-supplier" name="supplier" list="suppliers" autocomplete="off" placeholder="Sakthi Spinners"></div>
+                </div>
+              </div>
+              <div class="row2">
+                <div class="field">
+                  <label for="r-kg">Net weight</label>
+                  <div class="inp has-suf">
+                    <input type="text" id="r-kg" name="kg" inputmode="decimal" required autocomplete="off" placeholder="248.500">
+                    <span class="suf">kg</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="r-date">Receipt date</label>
+                  <div class="inp"><input type="date" id="r-date" name="date" required></div>
+                </div>
+              </div>
+              <div class="field">
+                <label for="r-ref">Reference <span class="hint">invoice, GRN or bill number</span></label>
+                <div class="inp"><input type="text" id="r-ref" name="ref" autocomplete="off" placeholder="INV-8891"></div>
+              </div>
+              <div class="btnrow">
+                <button class="btn primary" type="submit">Book this receipt</button>
+                <button class="btn ghost" type="reset">Clear</button>
+              </div>
+            </form>
+            <p class="note" data-status="receive" role="status" hidden></p>
+          </section>
+
+          <section class="card">
+            <h2>Why the dye-lot is part of the key</h2>
+            <p class="assumptions">Yarn is not a fungible commodity. Two lots of one nominal shade are dyed in separate baths, and the difference between them shows up as a band across the finished fabric at the point the warp or the feed changes over. Pooling them into a single &ldquo;30s Navy&rdquo; balance hides exactly the information a weaver needs, so this ledger never does it.</p>
+            <p class="assumptions">A lot is identified by count, shade, dye-lot and supplier together. Two suppliers reuse lot numbers, so the supplier has to be part of the identity. Capitalisation and stray spacing are ignored, so <b>dl-1142</b> and <b>DL-1142</b> stay on one balance.</p>
+            <h2>Adjust a lot</h2>
+            <p class="assumptions">For a short count on delivery, damage, or a stocktake correction. A positive figure adds, a negative one writes off. A write-off larger than the balance is refused rather than taking the lot negative.</p>
+            <form data-form="adjust">
+              <div class="row2">
+                <div class="field">
+                  <label for="a-count">Count</label>
+                  <div class="inp"><input type="text" id="a-count" name="count" list="counts" required autocomplete="off"></div>
+                </div>
+                <div class="field">
+                  <label for="a-shade">Shade</label>
+                  <div class="inp"><input type="text" id="a-shade" name="shade" list="shades" required autocomplete="off"></div>
+                </div>
+              </div>
+              <div class="row2">
+                <div class="field">
+                  <label for="a-lot">Dye-lot</label>
+                  <div class="inp"><input type="text" id="a-lot" name="dyeLot" required autocomplete="off"></div>
+                </div>
+                <div class="field">
+                  <label for="a-supplier">Supplier</label>
+                  <div class="inp"><input type="text" id="a-supplier" name="supplier" list="suppliers" autocomplete="off"></div>
+                </div>
+              </div>
+              <div class="row2">
+                <div class="field">
+                  <label for="a-kg">Adjustment <span class="hint">negative to write off</span></label>
+                  <div class="inp has-suf">
+                    <input type="text" id="a-kg" name="kg" inputmode="decimal" required autocomplete="off" placeholder="-2.500">
+                    <span class="suf">kg</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="a-date">Date</label>
+                  <div class="inp"><input type="date" id="a-date" name="date" required></div>
+                </div>
+              </div>
+              <div class="field">
+                <label for="a-ref">Reason</label>
+                <div class="inp"><input type="text" id="a-ref" name="ref" autocomplete="off" placeholder="stocktake, damp damage, short count"></div>
+              </div>
+              <div class="btnrow"><button class="btn ghost" type="submit">Post adjustment</button></div>
+            </form>
+            <p class="note" data-status="adjust" role="status" hidden></p>
+          </section>
+        </div>
+      </div>
+
+      <!-- ---------------------------------------------------------------- -->
+      <div class="panel" data-panel="issue" hidden>
+        <div class="cols calc">
+          <section class="card">
+            <h2>Issue to production</h2>
+            <p class="assumptions">Ask for a count and shade, not a lot. The allocation across dye-lots is worked out oldest receipt first and shown below before anything is written.</p>
+            <form data-form="issue">
+              <div class="row2">
+                <div class="field">
+                  <label for="i-count">Count</label>
+                  <div class="inp"><input type="text" id="i-count" name="count" list="counts" required autocomplete="off" placeholder="30s"></div>
+                </div>
+                <div class="field">
+                  <label for="i-shade">Shade</label>
+                  <div class="inp"><input type="text" id="i-shade" name="shade" list="shades" required autocomplete="off" placeholder="Navy"></div>
+                </div>
+              </div>
+              <div class="row2">
+                <div class="field">
+                  <label for="i-kg">Quantity to issue</label>
+                  <div class="inp has-suf">
+                    <input type="text" id="i-kg" name="kg" inputmode="decimal" required autocomplete="off" placeholder="120">
+                    <span class="suf">kg</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="i-date">Issue date</label>
+                  <div class="inp"><input type="date" id="i-date" name="date" required></div>
+                </div>
+              </div>
+              <div class="field">
+                <label for="i-ref">Work order <span class="hint">reference carried onto every allocation line</span></label>
+                <div class="inp"><input type="text" id="i-ref" name="ref" autocomplete="off" placeholder="WO-7741"></div>
+              </div>
+              <div class="btnrow">
+                <button class="btn ghost" type="submit">Plan the allocation</button>
+                <button class="btn primary" type="button" data-commit disabled>Confirm and post</button>
+              </div>
+            </form>
+            <p class="note" data-status="issue" role="status" hidden></p>
+          </section>
+
+          <section class="card sticky">
+            <h2>FIFO lot allocation</h2>
+            <div class="result-primary">
+              <div class="k">Allocated across dye-lots</div>
+              <div class="v" data-alloc-total>0.000 kg</div>
+              <div class="sub" data-alloc-sub>Plan an allocation to see which lots the yarn comes off.</div>
+            </div>
+            <table class="breakdown">
+              <thead>
+                <tr><th>Dye-lot</th><th>Received</th><th class="num">Take</th><th class="num">Left after</th></tr>
+              </thead>
+              <tbody data-alloc></tbody>
+            </table>
+            <p class="note" data-alloc-warn hidden></p>
+            <p class="assumptions">Oldest first is not just an accounting convention. The lot dyed earliest has had the longest to drift in storage, so it is the one to clear first, and running one lot right down before opening the next keeps the number of shade joins in the cloth to a minimum.</p>
+          </section>
+        </div>
+      </div>
+
+      <!-- ---------------------------------------------------------------- -->
+      <div class="panel" data-panel="counts" hidden>
+        <div class="cols calc">
+          <section class="card">
+            <h2>Yarn count conversion</h2>
+            <p class="assumptions">Ne and Nm are indirect counts: a bigger number is a finer yarn. Tex and denier are direct: a bigger number is a coarser yarn. Converting between the two families is a reciprocal, not a multiplication, which is the error this panel exists to prevent.</p>
+            <form data-form="convert">
+              <div class="field">
+                <label>Enter the count as</label>
+                <div class="seg" data-systems role="group" aria-label="Count system">
+                  <button type="button" data-system="Ne" aria-pressed="true">Ne</button>
+                  <button type="button" data-system="Nm" aria-pressed="false">Nm</button>
+                  <button type="button" data-system="tex" aria-pressed="false">tex</button>
+                  <button type="button" data-system="denier" aria-pressed="false">denier</button>
+                  <button type="button" data-system="count" aria-pressed="false">ply count</button>
+                </div>
+              </div>
+              <div class="field" data-value-field>
+                <label for="c-value">Value <span class="hint" data-value-hint>English cotton count, hanks per pound</span></label>
+                <div class="inp"><input type="text" id="c-value" inputmode="decimal" autocomplete="off" value="30"></div>
+              </div>
+              <div class="field" data-count-field hidden>
+                <label for="c-count">Count string <span class="hint">plies first: 2/60s is a two-fold of 60s</span></label>
+                <div class="inp"><input type="text" id="c-count" autocomplete="off" placeholder="2/60s"></div>
+              </div>
+              <div class="btnrow"><button class="btn primary" type="submit">Convert</button></div>
+            </form>
+            <p class="note" data-status="convert" role="status" hidden></p>
+          </section>
+
+          <section class="card sticky">
+            <h2>Resultant count</h2>
+            <table class="breakdown">
+              <tbody>
+                <tr><td>Ne <span class="hint">English cotton</span></td><td class="num" data-out-ne>&mdash;</td></tr>
+                <tr><td>Nm <span class="hint">metric</span></td><td class="num" data-out-nm>&mdash;</td></tr>
+                <tr><td>tex <span class="hint">g per 1000 m</span></td><td class="num" data-out-tex>&mdash;</td></tr>
+                <tr><td>denier <span class="hint">g per 9000 m</span></td><td class="num" data-out-denier>&mdash;</td></tr>
+              </tbody>
+            </table>
+            <p class="note" data-ply-note hidden></p>
+            <details class="assumptions">
+              <summary>The conversion factors used</summary>
+              <p>Everything above comes from three constants, with tex as the hub:</p>
+              <pre><code>tex    = 1000 / Nm        Nm  = 1000 / tex
+Ne     = 590.5 / tex      tex = 590.5 / Ne
+denier = 9 x tex          tex = denier / 9</code></pre>
+              <p>1000 and 9 are exact by definition. The Ne factor works out to 590.5412&hellip; from the definition of the hank, and mill practice rounds it to <b>590.5</b>, which is the figure used here: conversions stay within 0.007% of exact. If your buyer works to a different rounding, convert with their factor before quoting.</p>
+              <p>A folded count divides in Ne and multiplies in tex: a two-fold of 60s singles is a resultant Ne 30 and a resultant 19.683 tex. Only the plies-first form is read. <b>60/2</b> means the same yarn in some trades, and guessing between the two notations would silently take a count from 30 to 0.033, so it is refused instead.</p>
+            </details>
+          </section>
+        </div>
+      </div>
+
+      <!-- ---------------------------------------------------------------- -->
+      <div class="panel" data-panel="alerts" hidden>
+        <div class="cols">
+          <section class="card">
+            <h2>Below reorder level</h2>
+            <table class="breakdown">
+              <thead>
+                <tr><th>Count / shade</th><th class="num">On hand</th><th class="num">Level</th><th class="num">Suggested order</th></tr>
+              </thead>
+              <tbody data-reorder></tbody>
+            </table>
+            <p class="note" data-reorder-empty hidden>Nothing is below its reorder level. Set levels below so this list can do its job.</p>
+            <p class="assumptions">A reorder level is a trigger, not a target. Where no order-up-to level has been set, the suggestion brings stock up to twice the reorder level, so the item does not land straight back on this list. Set an explicit order-up-to figure to match your supplier's lead time and minimum dye-lot size.</p>
+          </section>
+
+          <section class="card">
+            <h2>Aged dye-lots</h2>
+            <p class="assumptions">Dyed yarn drifts in shade as it sits. An old part-lot is the one most likely to band against a fresh lot of the same nominal shade, so it is worth clearing or re-sampling before it goes into a long run.</p>
+            <table class="breakdown">
+              <thead>
+                <tr><th>Count / shade</th><th>Dye-lot</th><th>Received</th><th class="num">Age</th><th class="num">Balance</th></tr>
+              </thead>
+              <tbody data-aged></tbody>
+            </table>
+            <p class="note" data-aged-empty hidden>No lot is older than the threshold.</p>
+            <form data-form="settings">
+              <div class="field">
+                <label for="s-aged">Flag a lot after <span class="hint">days from its first receipt</span></label>
+                <div class="inp has-suf">
+                  <input type="number" id="s-aged" name="agedAfterDays" min="1" max="3650" step="1" required value="90">
+                  <span class="suf">days</span>
+                </div>
+              </div>
+              <div class="btnrow"><button class="btn ghost" type="submit">Save threshold</button></div>
+            </form>
+            <p class="note" data-status="settings" role="status" hidden></p>
+          </section>
+
+          <section class="card">
+            <h2>Reorder levels</h2>
+            <table class="breakdown">
+              <thead>
+                <tr><th>Count</th><th>Shade</th><th class="num">On hand</th><th class="num">Level</th><th class="num">Order up to</th><th></th></tr>
+              </thead>
+              <tbody data-rules></tbody>
+            </table>
+            <p class="note" data-rules-empty hidden>No reorder levels set yet.</p>
+            <form data-form="rule">
+              <div class="row2">
+                <div class="field">
+                  <label for="k-count">Count</label>
+                  <div class="inp"><input type="text" id="k-count" name="count" list="counts" required autocomplete="off"></div>
+                </div>
+                <div class="field">
+                  <label for="k-shade">Shade</label>
+                  <div class="inp"><input type="text" id="k-shade" name="shade" list="shades" required autocomplete="off"></div>
+                </div>
+              </div>
+              <div class="row2">
+                <div class="field">
+                  <label for="k-level">Reorder level</label>
+                  <div class="inp has-suf">
+                    <input type="text" id="k-level" name="levelKg" inputmode="decimal" required autocomplete="off" placeholder="100">
+                    <span class="suf">kg</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="k-target">Order up to <span class="hint">optional</span></label>
+                  <div class="inp has-suf">
+                    <input type="text" id="k-target" name="orderUpToKg" inputmode="decimal" autocomplete="off" placeholder="300">
+                    <span class="suf">kg</span>
+                  </div>
+                </div>
+              </div>
+              <div class="btnrow"><button class="btn ghost" type="submit">Save level</button></div>
+            </form>
+            <p class="note" data-status="rule" role="status" hidden></p>
+          </section>
+        </div>
+      </div>
+
+      <!-- ---------------------------------------------------------------- -->
+      <div class="panel" data-panel="data" hidden>
+        <div class="cols">
+          <section class="card">
+            <h2>Import receipts from a CSV</h2>
+            <p class="assumptions">Columns are matched by header name, not position, so your own sheet's column order is fine. <b>date</b>, <b>count</b>, <b>shade</b>, <b>dye_lot</b> and <b>kg</b> are required; <b>supplier</b> and <b>ref</b> are optional. Common alternatives are understood: colour, lot no, vendor, weight, invoice. Rows that cannot be read are listed with their line numbers and the rest still import.</p>
+            <div class="field">
+              <label for="d-file">Receipts CSV</label>
+              <div class="inp"><input type="file" id="d-file" accept=".csv,text/csv"></div>
+            </div>
+            <div class="btnrow">
+              <button class="btn primary" type="button" data-import disabled>Import receipts</button>
+              <a class="btn ghost" href="/api/template/receipts.csv" download>Download a blank template</a>
+            </div>
+            <p class="note" data-status="import" role="status" hidden></p>
+            <table class="breakdown" data-import-table hidden>
+              <thead><tr><th class="num">Line</th><th>Why it was skipped</th></tr></thead>
+              <tbody data-import-rows></tbody>
+            </table>
+          </section>
+
+          <section class="card">
+            <h2>Export</h2>
+            <p class="assumptions">Both files are plain CSV and open in any spreadsheet. The balance sheet keeps lots that have been run down to zero, so it reconciles against the receipts it came from.</p>
+            <div class="btnrow">
+              <a class="btn ghost" href="/api/export/balances.csv" download>Balances by dye-lot</a>
+              <a class="btn ghost" href="/api/export/issues.csv" download>Issue register</a>
+            </div>
+            <h2>Where your data lives</h2>
+            <p class="assumptions">One JSON file on this machine, written in full on every change. Nothing is sent anywhere: this tool makes no outbound network connections at all.</p>
+            <pre><code data-datafile>loading&hellip;</code></pre>
+          </section>
+
+          <section class="card">
+            <h2>Consumption against standard</h2>
+            <p class="assumptions">Compare the yarn actually issued for a count and shade over a period against what the production booked in that period should have taken.</p>
+            <form data-form="consumption">
+              <div class="row2">
+                <div class="field">
+                  <label for="v-count">Count</label>
+                  <div class="inp"><input type="text" id="v-count" name="count" list="counts" required autocomplete="off"></div>
+                </div>
+                <div class="field">
+                  <label for="v-shade">Shade</label>
+                  <div class="inp"><input type="text" id="v-shade" name="shade" list="shades" required autocomplete="off"></div>
+                </div>
+              </div>
+              <div class="row2">
+                <div class="field">
+                  <label for="v-from">From</label>
+                  <div class="inp"><input type="date" id="v-from" name="from" required></div>
+                </div>
+                <div class="field">
+                  <label for="v-to">To <span class="hint">inclusive</span></label>
+                  <div class="inp"><input type="date" id="v-to" name="to" required></div>
+                </div>
+              </div>
+              <div class="row2">
+                <div class="field">
+                  <label for="v-units">Production</label>
+                  <div class="inp has-suf">
+                    <input type="text" id="v-units" name="units" inputmode="decimal" required autocomplete="off" placeholder="1000">
+                    <span class="suf">units</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="v-gpu">Standard per unit</label>
+                  <div class="inp has-suf">
+                    <input type="text" id="v-gpu" name="gramsPerUnit" inputmode="decimal" required autocomplete="off" placeholder="250">
+                    <span class="suf">g</span>
+                  </div>
+                </div>
+              </div>
+              <div class="btnrow"><button class="btn primary" type="submit">Compare</button></div>
+            </form>
+            <p class="note" data-status="consumption" role="status" hidden></p>
+            <table class="breakdown" data-variance-table hidden>
+              <tbody>
+                <tr><td>Standard requirement</td><td class="num" data-v-expected></td></tr>
+                <tr><td>Actually issued</td><td class="num" data-v-actual></td></tr>
+                <tr class="total"><td>Variance</td><td class="num" data-v-variance></td></tr>
+                <tr class="sub"><td>Against standard</td><td class="num" data-v-over></td></tr>
+                <tr class="sub"><td>Wastage on issue</td><td class="num" data-v-wastage></td></tr>
+              </tbody>
+            </table>
+            <p class="assumptions">Two percentages, because the floor uses both and they are not the same number. <b>Against standard</b> divides the excess by the standard requirement, which is the figure to judge a costing allowance by. <b>Wastage on issue</b> divides it by what was actually drawn, which is the conventional mill wastage figure. Either is left blank when its denominator is zero rather than shown as a nonsense number.</p>
+          </section>
+        </div>
+      </div>
+
+      <datalist id="counts"></datalist>
+      <datalist id="shades"></datalist>
+      <datalist id="suppliers"></datalist>
+    </div>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap">
+      <span>Open MSME &middot; free tools for small businesses in India and the Philippines</span>
+      <a href="https://sreenivas-sadhu-prabhakara.github.io/openmsme/">All tools</a>
+    </div>
+  </footer>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>
