@@ -120,3 +120,20 @@ pre code { background:none; padding:0; font-size:inherit; }
 .steps { counter-reset:s; list-style:none; padding:0; }
 .steps li { counter-increment:s; position:relative; padding-left:34px; margin:12px 0; color:var(--ink-2); }
 .steps li::before { content:counter(s); position:absolute; left:0; top:1px; width:23px; height:23px; border-radius:6px; background:var(--tool); color:#fff; font-size:.78rem; font-weight:700; display:flex; align-items:center; justify-content:center; font-family:var(--mono); }
+
+/* Grid/flex children default to min-width:auto, so a long unbroken string (a clone
+   URL in a <pre>) sizes the track to its min-content and forces page-wide horizontal
+   scroll. Let children shrink and keep the scrolling inside the pre where it belongs. */
+.cols > *, .featgrid > *, .ideas > * { min-width: 0; }
+pre { max-width: 100%; }
+
+/* Small coloured text needs a lighter accent in dark mode: the sector hues are
+   mid-tone and fall below AA contrast on a dark surface. Backgrounds/borders keep
+   the true accent; only small text uses the lightened derivative. */
+:root { --tool-text: var(--tool); }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --tool-text: color-mix(in srgb, var(--tool) 50%, white); } }
+:root[data-theme="dark"]{ --tool-text: color-mix(in srgb, var(--tool) 50%, white); }
+.hero .eyebrow { color: var(--tool-text); }
+.pill.reg { color: var(--tool-text); }
+.result-primary .v { color: var(--tool-text); }
+.wave-card .repo, .brand .tag { color: var(--tool-text); }
